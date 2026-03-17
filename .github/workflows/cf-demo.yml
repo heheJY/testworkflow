@@ -5,15 +5,28 @@ on:
 jobs:
   call-protected-api:
     runs-on: ubuntu-latest
-    environment: demo
     steps:
       - name: Check secret presence
         run: |
           [ -n "${{ secrets.CF_ACCESS_CLIENT_ID_GHA }}" ] && echo "client id present" || echo "client id missing"
           [ -n "${{ secrets.CF_ACCESS_CLIENT_SECRET_GHA }}" ] && echo "client secret present" || echo "client secret missing"
-      - name: Call Cloudflare-protected endpoint
+
+      - name: Call protected endpoint and fail unless 200
         run: |
-          curl -i \
+          set -euo pipefail
+
+          status=$(curl -sS -o response.txt -D headers.txt -w "%{http_code}" \
             -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID_GHA }}" \
             -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET_GHA }}" \
-            https://github-api.testjy.org/whoami
+            https://github-api.testjy.org/whoami)
+
+          echo "HTTP status: $status"
+          echo "---- response headers ----"
+          cat headers.txt
+          echo "---- response body ----"
+          cat response.txt
+
+          if [ "$status" != "200" ]; then
+            echo "::error title=Cloudflare Access failed::Expected 200 from service-token auth, got $status"
+            exit 1
+          fi
