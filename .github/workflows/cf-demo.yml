@@ -1,0 +1,14 @@
+name: Cloudflare Access Demo
+on:
+  workflow_dispatch:
+
+jobs:
+  call-protected-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Cloudflare-protected endpoint
+        run: |
+          curl -i \
+            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID_GHA }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET_GHA }}" \
+            https://github-api.testjy.org/whoami
